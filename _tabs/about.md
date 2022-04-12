@@ -6,7 +6,7 @@ order: 4
 
 ## 关于本博客
 
-2022年4月12日，基于[https://github.com/cotes2020/jekyll-theme-chirpy](Chirpy)主题搭建本博客
+2022年4月12日，基于[Chirpy](https://github.com/cotes2020/jekyll-theme-chirpy)主题搭建本博客
 
 2022年4月12日，上传本博客第一篇文章，也是很早之前总结的关于kafka协议的一篇文章
 
