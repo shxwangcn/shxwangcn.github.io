@@ -4,5 +4,22 @@ icon: fas fa-info-circle
 order: 4
 ---
 
-> Add Markdown syntax content to file `_tabs/about.md`{: .filepath } and it will show up on this page.
-{: .prompt-tip }
+## 关于本博客
+
+2022年4月12日，基于[https://github.com/cotes2020/jekyll-theme-chirpy](Chirpy)主题搭建本博客
+
+2022年4月12日，上传本博客第一篇文章，也是很早之前总结的关于kafka协议的一篇文章
+
+...
+
+## 关于我
+
+1990年，出生于安徽省安庆市长江边上的一个小村庄
+
+2007年，从安徽来到了广州中山大学，就读“天坑”专业——环境科学
+
+2011年，从个人兴趣出发，自学通信工程专业基础课程，考入北京邮电大学通信与信息系统专业
+
+2014年，开始工作，历经嵌入式开发，互联网后台基础平台开发，音视频传输后台开发等工作
+
+...
