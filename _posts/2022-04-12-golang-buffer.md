@@ -1,12 +1,12 @@
 ---
-title: 浅谈golang中的buffer
+title: 聊聊golang中的数据处理
 date: 2022-04-12 11:40:48 +0800
-categories: [golang,buffer]
+categories: [golang, io]
 tags: golang buffer
 mermaid: true
 ---
 
-本篇文章，我们来聊聊golang中的buffer。
+本篇文章，我们来聊聊golang中的数据处理。
 
 在golang中操作二进制数据，你肯定用过下面的这些类型或者函数：
 
@@ -86,7 +86,11 @@ func CopyData(in Reader, out Writer) (int,error) {
 
 在上面的示例中，我们第一步中，把数据从 Reader 拷贝到临时 buffer，假定数据不超过某个限制。那么在实际开发中，如果碰到事先不知道数据长度的情况，该怎么办呢？
 
-方法嘛，很简单，加个循环，不停地以1KB为单位从Reader拷贝出数据，直到没有数据为止。
+一般地，对于 Reader 接口的实现而言，它的内部一般都会有个指示当前读取到了哪个位置（偏移量）。每次 Read 操作，都会根据实际已读取的字节数，往前移动偏移量。
+
+> 这里插播另外一个接口：`Seeker`。对于 Reader，偏移量只能单调地往前进，既不能往后退，也不能往前跳过部分数据，在有些场景可能会带来不便。而 Seeker，顾名思义，实现了 Seek() 方法，可以往前跳跃，也可以往后回退，甚至可以实现倒着读数据。
+
+所以，为了读取长度未知的Reader，只要加个循环，不停地以固定size（例如1KB）为单位从Reader拷贝出数据，直到没有数据为止。
 
 我们把上面写的单次拷贝的函数实现改名为 `CopyBlock`，然后再实现下面的`CopyData`：
 
@@ -203,7 +207,7 @@ type Buffer struct {
 }
 ```
 
-`lastRead`只是为了在调用`Unread*`系列函数来撤销上次的读取操作时，保存上次的读操作类型。所谓“撤销读”操作，其实就是将偏移量回退到上次读操作之前的位置。那么，当然要知道上次是读取了什么类型的数据了（即上次读取了几个字节）。
+> `lastRead`只是为了在调用`Unread*`系列函数来撤销上次的读取操作时，保存上次的读操作类型。所谓“撤销读”操作，其实就是将偏移量回退到上次读操作之前的位置。那么，当然要知道上次是读取了什么类型的数据了（即上次读取了几个字节）。
 
 当作为 Writer 时，`bytes.Buffer`内部会自动分配足够的内存以保存写入的数据，而无需使用者关心。
 
@@ -223,16 +227,16 @@ buf.Write(data)
 
 不知道大家有没有注意到，Reader + Writer 的方式，只能形成简单的单链处理逻辑。因为一个 Reader，你一旦把它的数据读取了，那么就没法再读取第二遍。
 
-要想在某个节点处分叉，那么必须先把数据拷贝出来 `[]byte`，然后再基于该 slice,重新初始化多个新的 Reader。
+要想在某个节点处分叉，那么必须先把数据拷贝出来(`[]byte`) ，然后再基于该 slice,重新初始化多个新的 Reader 去处理它。
 
-所以这里又有了个新需求：将数据从 Reader 一次性全部拷贝到单个 slice。这就是官方库里的 `io.ReadAll()`。
+所以这里又有了个新需求：将数据从 Reader 一次性全部拷贝到单个 slice（以下称其为 resultSlice）。这就是官方库里的 `io.ReadAll()`。
 
 ```go
 // 从 Reader 一直读数据，直到出错或者返回EOF，并返回成功读取到的数据
 bytes, err := io.ReadAll(in)
 ```
 
-因为无法事先知道 Reader 的数据长度，所以 `ReadAll`的内部实现，必然是以block为单元，一直循环去读数据，直到出错或者返回EOF。
+因为无法事先知道 Reader 的数据长度，所以 `ReadAll`的内部实现，一种可能的方案，就是在一个循环内，不停地按固定size读取出数据（unitSlice），再将 unitSlice 数据 append 到 resultSlice，直到EOF为止。
 
 这里贴下它的实现：
 
@@ -256,12 +260,103 @@ func ReadAll(r Reader) ([]byte, error) {
 }
 ```
 
-这里的实现比较不直白。它并不是以固定的size去循环读，而是先分配个初始的 512Bytes的 slice，然后有额外的数据时，依赖 slice本身的内存扩容机制（每扩容一次，需要将数据全部从旧位置复制到新位置）。
+这里的实现比较不直白。它并不是以固定的size去循环读，而是先分配个初始的 512Bytes的 slice，然后有额外的数据时，先依赖 slice本身的内存扩容机制（每扩容一次，需要将数据全部从旧位置复制到新位置）将其扩容，再将数据直接写到扩容后的空间。
 
-当然，因为最终返回给调用者的只能是单个的slice，所以如果按照直观的实现，每次先读取到一个固定size的slice，然后再把这些slice合并成一个大的slice，并不能避免数据复制。反而，依赖slice本身的扩容机制，还能减少内存碎片。（注：具体可以实测下）。
+## 数据的序列化&反序列化
+
+上面我们说了很多，但是都只是涉及到数据的复制，没有涉及到对数据的处理。实际开发中，我们经常会碰到数据的序列化和反序列化问题。
+
+- 所谓“序列化”，就是将一个具有某种结构（类型）的对象，按照某种规则，转换成一段二进制数据（一般是`[]byte`）；
+- 所谓“反序列化”， 就是从一段二进制数据，按照某种规则，将其转换回特定结构（类型）的对象。
+
+### 反序列化
+
+对于反序列化，可以将数据的来源抽象成 `io.Reader`，然后一边读，一边进行数据转换。
+
+打个比方，我们在做服务开发时，肯定会涉及到 API 的调用（HTTP RESTFul API，或者 grpc/brpc等RPC框架）。这里以 HTTP 请求返回 JSON 格式的数据为例：
+
+```go
+type User struct {
+	Id      string `json:"id"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Tel     string `json:"tel"`
+}
+
+func GetUserInfo(id string) (*User, error) {
+	resp, err := http.Get("https://example.com/users/" + id)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	user := User{}
+}
+```
+
+这里，我们需要实现一个 `GetUserInfo` 函数，从服务端查询回JSON格式的数据，然后将其转换成一个`User`类型的对象。
+
+请求返回的 Body 数据存储在一个 `resp.Body` 对象中，它的接口类型是`io.ReadCloser`（ io.Reader + io.Closer）。
+
+一种比较直观的方法就是，我们先把它的数据全部读取出来（`io.ReadAll`），然后调用 `json.Unmarshal` 完成 json 反序列化。
+
+```
+	data, err := io.ReadAll(resp.Body)
+	err = json.Unmarshal(data, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+```
+
+当然，熟悉使用json库的同学，肯定知道还有另外一种方法完成反序列化：
+
+```go
+decoder := json.NewDecoder(resp.Body)
+decoder.Decode(&user)
+```
+
+这里引入了一种新的类型：`json.Decoder`。创建它时，需要传入一个 Reader 对象；然后在调用`Decode()`时，直接从 Reader 对象一边读，一边反序列化（就跟从 `[]byte` 边读边序列化一样）。
+
+相比于上面的方法，这种方法减少了一次数据复制的开销，性能更强。
+
+### 序列化
+
+对于序列化，将数据的去处，抽象化为 `io.Writer` 对象，然后一边转换，一边将数据写到 Writer 即可。
+
+还是以上面的场景为例，这次我们需要实现一个 `UpdateUserInfo()` 函数，去服务端更新用户信息。
+
+```go
+func UpdateUserInfo(user *User) error {
+	buf := bytes.Buffer{}
+
+	encoder := json.NewEncoder(&buf)
+	err := encoder.Encode(user)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post("https://example.com/users", "application/json", &buf)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("PostFailed: %d(%s)", resp.StatusCode, resp.Status)
+	}
+	return nil
+}
+```
+
+思考下这里数据的走向，涉及到两个环节：序列化（结构体对象 -> 二进制数据）和 HTTP发包（二进制数据 -> 网络协议栈）。
+
+所以，这里我们使用 `bytes.Buffer` 来存储二进制数据。在序列化环节，它是一个 Writer；在发包环节，它是一个 Reader。
 
 ## 总结
 
 本篇文章，从最基础的 Reader 接口 和 Writer 接口入手，一步步地为大家介绍了 `io.Copy`，`bytes.Buffer` 和 `io.ReadAll` 的使用和内部实现。
 
-尤其需要注意的是，如果数据处理是单链形式的，那么直接使用 Reader + Writer 将数据一步步传递即可。如果需要进行分叉，那么使用`io.ReadAll`将原始数据拷贝出来再封装 Reader。
+尤其需要注意的是，对于数据处理，优先考虑是否将其抽象化为 `Reader` 和 `Writer`。只有在特别必要的场景下，才需要使用`io.ReadAll`将原始数据拷贝出来。
