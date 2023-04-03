@@ -1,0 +1,353 @@
+<!DOCTYPE html><html lang="zh-CN" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f7f7"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1b1b1e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="viewport" content="width=device-width, user-scalable=no initial-scale=1, shrink-to-fit=no, viewport-fit=cover" ><meta name="generator" content="Jekyll v4.3.2" /><meta property="og:title" content="聊聊golang中的数据处理" /><meta property="og:locale" content="zh_CN" /><meta name="description" content="本篇文章，我们来聊聊golang中的数据处理。" /><meta property="og:description" content="本篇文章，我们来聊聊golang中的数据处理。" /><link rel="canonical" href="/posts/golang-buffer/" /><meta property="og:url" content="/posts/golang-buffer/" /><meta property="og:site_name" content="halfstep" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2022-04-12T11:40:48+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="聊聊golang中的数据处理" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2022-04-15T20:48:43+08:00","datePublished":"2022-04-12T11:40:48+08:00","description":"本篇文章，我们来聊聊golang中的数据处理。","headline":"聊聊golang中的数据处理","mainEntityOfPage":{"@type":"WebPage","@id":"/posts/golang-buffer/"},"url":"/posts/golang-buffer/"}</script><title>聊聊golang中的数据处理 | halfstep</title><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/site.webmanifest"><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico"><meta name="apple-mobile-web-app-title" content="halfstep"><meta name="application-name" content="halfstep"><meta name="msapplication-TileColor" content="#da532c"><meta name="msapplication-config" content="/assets/img/favicons/browserconfig.xml"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://cdn.jsdelivr.net" ><link rel="dns-prefetch" href="https://cdn.jsdelivr.net" ><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato&family=Source+Sans+Pro:wght@400;600;700;900&display=swap"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css"><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tocbot@4.20.1/dist/tocbot.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/magnific-popup@1/dist/magnific-popup.min.css"> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get MODE_ATTR() { return "data-mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } static get ID() { return "mode-toggle"; } constructor() { if (this.hasMode) { if (this.isDarkMode) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } let self = this; /* always follow the system prefers */ this.sysDarkPrefers.addEventListener('change', () => { if (self.hasMode) { if (self.isDarkMode) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } self.notify(); }); } /* constructor() */ get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode === ModeToggle.DARK_MODE; } get isLightMode() { return this.mode === ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } /* get the current mode on screen */ get modeStatus() { if (this.isDarkMode || (!this.hasMode && this.isSysDarkPrefer)) { return ModeToggle.DARK_MODE; } else { return ModeToggle.LIGHT_MODE; } } setDark() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_ATTR); sessionStorage.removeItem(ModeToggle.MODE_KEY); } /* Notify another plugins that the theme mode has changed */ notify() { window.postMessage({ direction: ModeToggle.ID, message: this.modeStatus }, "*"); } flipMode() { if (this.hasMode) { if (this.isSysDarkPrefer) { if (this.isLightMode) { this.clearMode(); } else { this.setLight(); } } else { if (this.isDarkMode) { this.clearMode(); } else { this.setDark(); } } } else { if (this.isSysDarkPrefer) { this.setLight(); } else { this.setDark(); } } this.notify(); } /* flipMode() */ } /* ModeToggle */ const modeToggle = new ModeToggle(); </script><body data-topbar-visible="true"><div id="sidebar" class="d-flex flex-column align-items-end"><div class="profile-wrapper text-center"><div id="avatar"> <a href="/" class="mx-auto"> <img src="https://raw.githubusercontent.com/shxwangcn/pics/main/common/avatar2.png" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="site-title"> <a href="/">halfstep</a></div><div class="site-subtitle font-italic">不积跬步无以至千里</div></div><ul class="w-100"><li class="nav-item"> <a href="/" class="nav-link"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>首页</span> </a><li class="nav-item"> <a href="/categories/" class="nav-link"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>分类</span> </a><li class="nav-item"> <a href="/tags/" class="nav-link"> <i class="fa-fw fas fa-tag ml-xl-3 mr-xl-3 unloaded"></i> <span>标签</span> </a><li class="nav-item"> <a href="/archives/" class="nav-link"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>归档</span> </a><li class="nav-item"> <a href="/about/" class="nav-link"> <i class="fa-fw fas fa-info-circle ml-xl-3 mr-xl-3 unloaded"></i> <span>关于</span> </a></ul><div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center"> <button class="mode-toggle btn" aria-label="Switch Mode"> <i class="fas fa-adjust"></i> </button> <span class="icon-border"></span> <a href="https://github.com/shxwangcn" aria-label="github" target="_blank" rel="noopener noreferrer"> <i class="fab fa-github"></i> </a> <a href="javascript:location.href = 'mailto:' + ['shx.wang','outlook.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a></div></div><div id="topbar-wrapper"><div id="topbar" class="container d-flex align-items-center justify-content-between h-100 pl-3 pr-3 pl-md-4 pr-md-4"> <span id="breadcrumb"> <span> <a href="/"> 首页 </a> </span> <span>聊聊golang中的数据处理</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> 文章</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" autocomplete="off" placeholder="搜索..."> </span> <span id="search-cancel" >取消</span></div></div><div id="main-wrapper" class="d-flex justify-content-center"><div id="main" class="container pl-xl-4 pr-xl-4"><div class="row"><div id="core-wrapper" class="col-12 col-lg-11 col-xl-9 pr-xl-4"><div class="post pl-1 pr-1 pl-md-2 pr-md-2"><h1 data-toc-skip>聊聊golang中的数据处理</h1><div class="post-meta text-muted"> <span> 发表于 <em class="" data-ts="1649734848" data-df="YYYY/MM/DD" data-toggle="tooltip" data-placement="bottom"> 2022/04/12 </em> </span> <span> 更新于 <em class="" data-ts="1650026923" data-df="YYYY/MM/DD" data-toggle="tooltip" data-placement="bottom"> 2022/04/15 </em> </span><div class="d-flex justify-content-between"> <span> 作者 <em> <a href="https://github.com/shxwangcn">王书孝(Wang Shuxiao)</a> </em> </span><div> <span class="readtime" data-toggle="tooltip" data-placement="bottom" title="3390 字"> <em>18 分钟</em>阅读</span></div></div></div><div class="post-content"><p>本篇文章，我们来聊聊golang中的数据处理。</p><p>在golang中操作二进制数据，你肯定用过下面的这些类型或者函数：</p><ul><li><code class="language-plaintext highlighter-rouge">bytes.Buffer</code><li><code class="language-plaintext highlighter-rouge">io.Copy</code><li><code class="language-plaintext highlighter-rouge">ioutil.ReadAll</code></ul><p>这些类或者函数，底层实现是怎样的？在特定的场景下，我们应该如何选择用哪种呢？</p><h2 id="1-认识golang中的数据读写机制"><span class="mr-2">1 认识golang中的数据读写机制</span><a href="#1-认识golang中的数据读写机制" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>golang中，所有的读写数据的类，都实现了下面的两个基本接口：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre><td class="rouge-code"><pre><span class="c">// 将数据从对象读取到指定slice，必须保证 len(p) 足够容纳想要读取的数据</span>
+<span class="c">// 若成功，则返回实际读取到的字节数（0 &lt;= n &lt;= len(p))</span>
+<span class="k">type</span> <span class="n">Reader</span> <span class="k">interface</span> <span class="p">{</span>
+    <span class="n">Read</span><span class="p">(</span><span class="n">p</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="kt">int</span><span class="p">,</span> <span class="n">err</span> <span class="kt">error</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c">// 将指定slice的数据写入到对象</span>
+<span class="c">// 返回实际写入的字节数（取决于对象内部能容纳多少数据）</span>
+<span class="k">type</span> <span class="n">Writer</span> <span class="k">interface</span> <span class="p">{</span>
+    <span class="n">Write</span><span class="p">(</span><span class="n">p</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="kt">int</span><span class="p">,</span> <span class="n">err</span> <span class="kt">error</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>假定，我们现在要写一个<code class="language-plaintext highlighter-rouge">Copy(in Reader, out Writer)</code>的函数，实现将数据从 <code class="language-plaintext highlighter-rouge">in</code> 拷贝到 <code class="language-plaintext highlighter-rouge">out</code>。</p><p>很简单，只要先调用 <code class="language-plaintext highlighter-rouge">A.Read()</code> ，再调用 <code class="language-plaintext highlighter-rouge">B.Write()</code> 就完事了。</p><p>OK，接下来就可以写代码实现了。不过，在此之前，我们要先确认一下 <code class="language-plaintext highlighter-rouge">Read</code> 和 <code class="language-plaintext highlighter-rouge">Write</code> 方法的具体行为。</p><p>对于 <code class="language-plaintext highlighter-rouge">Read</code>：</p><ul><li>当返回的err不为 nil 时，n 可能 &gt; 0，需要注意处理；<li>当读取到的数据不能填满buf时，返回的 err 可能是 EOF，但也有可能是 nil，取决于具体实现；<li>当没有数据可读时，所有实现都应当返回 <code class="language-plaintext highlighter-rouge">0, EOF</code></ul><p>这意味着，我们在处理 <code class="language-plaintext highlighter-rouge">Read</code> 返回时，应当先处理 <code class="language-plaintext highlighter-rouge">n &gt; 0</code>，再处理 <code class="language-plaintext highlighter-rouge">err != nil</code>。</p><p>对于 <code class="language-plaintext highlighter-rouge">Write</code>：</p><ul><li>当返回的 n &lt; len(p) 时，应当返回一个 非 nil 的 err；</ul><p>接下来，就是我们实现的<code class="language-plaintext highlighter-rouge">CopyData</code>了：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">CopyData</span><span class="p">(</span><span class="n">in</span> <span class="n">Reader</span><span class="p">,</span> <span class="n">out</span> <span class="n">Writer</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span><span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c">// 先创建一个足够容纳要拷贝的数据的slice，这里假定不超过1KB</span>
+    <span class="n">buf</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="m">1024</span><span class="p">)</span>
+
+    <span class="c">// 先把数据从 in 拷贝到 buf</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">in</span><span class="o">.</span><span class="n">Read</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="m">0</span> <span class="p">{</span>
+        <span class="c">// 将buf截断为实际读取到的长度</span>
+        <span class="n">buf</span> <span class="o">:=</span> <span class="n">buf</span><span class="p">[</span><span class="o">:</span><span class="n">n</span><span class="p">]</span>
+
+        <span class="c">// 再把数据写到 out</span>
+        <span class="n">n</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="n">err</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">err</span> <span class="o">==</span> <span class="n">EOF</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="no">nil</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="n">err</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>只要掌握了 <code class="language-plaintext highlighter-rouge">Reader</code> 和 <code class="language-plaintext highlighter-rouge">Writer</code> 这两个接口的使用，那么其实就已经掌握了 golang 中操作数据的精髓了：</p><p>数据的处理可以是将一系列 Handler 链在一起。起始处是一个 Reader，中间加工环节都是 Writer + Reader，最后是一个 Writer。</p><p><a href="https://raw.githubusercontent.com/shxwangcn/pics/main/golang/dataflow.png" class="popup img-link "><img data-src="https://raw.githubusercontent.com/shxwangcn/pics/main/golang/dataflow.png" alt="dataflow" class="lazyload" data-proofer-ignore></a></p><h2 id="2-读取长度未知的数据"><span class="mr-2">2 读取长度未知的数据</span><a href="#2-读取长度未知的数据" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>在上面的示例中，我们第一步中，把数据从 Reader 拷贝到临时 buffer，假定数据不超过某个限制。那么在实际开发中，如果碰到事先不知道数据长度的情况，该怎么办呢？</p><p>一般地，对于 Reader 接口的实现而言，它的内部一般都会有个指示当前读取到了哪个位置（偏移量）。每次 Read 操作，都会根据实际已读取的字节数，往前移动偏移量。</p><blockquote><p>这里插播另外一个接口：<code class="language-plaintext highlighter-rouge">Seeker</code>。对于 Reader，偏移量只能单调地往前进，既不能往后退，也不能往前跳过部分数据，在有些场景可能会带来不便。而 Seeker，顾名思义，实现了 Seek() 方法，可以往前跳跃，也可以往后回退，甚至可以实现倒着读数据。</p></blockquote><p>所以，为了读取长度未知的Reader，只要加个循环，不停地以固定size（例如1KB）为单位从Reader拷贝出数据，直到没有数据为止。</p><p>我们把上面写的单次拷贝的函数实现改名为 <code class="language-plaintext highlighter-rouge">CopyBlock</code>，然后再实现下面的<code class="language-plaintext highlighter-rouge">CopyData</code>：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">CopyData</span><span class="p">(</span><span class="n">in</span> <span class="n">Reader</span><span class="p">,</span> <span class="n">out</span> <span class="n">Writer</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span><span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">bytes</span> <span class="o">:=</span> <span class="m">0</span>
+    <span class="k">for</span> <span class="p">{</span>
+        <span class="n">n</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">CopyBlock</span><span class="p">(</span><span class="n">in</span><span class="p">[</span><span class="n">bytes</span><span class="o">:</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="n">bytes</span><span class="o">:</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="m">0</span> <span class="p">{</span>
+            <span class="n">bytes</span> <span class="o">+=</span> <span class="n">n</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">err</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">bytes</span><span class="p">,</span> <span class="no">nil</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>当然，<code class="language-plaintext highlighter-rouge">CopyData</code>这么基础的函数，肯定是非常有用的，所以官方提供了一个标准实现：<code class="language-plaintext highlighter-rouge">io.Copy()</code>。</p><p>可以看看它的实现代码：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">Copy</span><span class="p">(</span><span class="n">dst</span> <span class="n">Writer</span><span class="p">,</span> <span class="n">src</span> <span class="n">Reader</span><span class="p">)</span> <span class="p">(</span><span class="n">written</span> <span class="kt">int64</span><span class="p">,</span> <span class="n">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">copyBuffer</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="no">nil</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="n">copyBuffer</span><span class="p">(</span><span class="n">dst</span> <span class="n">Writer</span><span class="p">,</span> <span class="n">src</span> <span class="n">Reader</span><span class="p">,</span> <span class="n">buf</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="n">written</span> <span class="kt">int64</span><span class="p">,</span> <span class="n">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c">// If the reader has a WriteTo method, use it to do the copy.</span>
+	<span class="c">// Avoids an allocation and a copy.</span>
+	<span class="k">if</span> <span class="n">wt</span><span class="p">,</span> <span class="n">ok</span> <span class="o">:=</span> <span class="n">src</span><span class="o">.</span><span class="p">(</span><span class="n">WriterTo</span><span class="p">);</span> <span class="n">ok</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">wt</span><span class="o">.</span><span class="n">WriteTo</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="c">// Similarly, if the writer has a ReadFrom method, use it to do the copy.</span>
+	<span class="k">if</span> <span class="n">rt</span><span class="p">,</span> <span class="n">ok</span> <span class="o">:=</span> <span class="n">dst</span><span class="o">.</span><span class="p">(</span><span class="n">ReaderFrom</span><span class="p">);</span> <span class="n">ok</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">rt</span><span class="o">.</span><span class="n">ReadFrom</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="n">buf</span> <span class="o">==</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="n">size</span> <span class="o">:=</span> <span class="m">32</span> <span class="o">*</span> <span class="m">1024</span>
+		<span class="k">if</span> <span class="n">l</span><span class="p">,</span> <span class="n">ok</span> <span class="o">:=</span> <span class="n">src</span><span class="o">.</span><span class="p">(</span><span class="o">*</span><span class="n">LimitedReader</span><span class="p">);</span> <span class="n">ok</span> <span class="o">&amp;&amp;</span> <span class="kt">int64</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">l</span><span class="o">.</span><span class="n">N</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">N</span> <span class="o">&lt;</span> <span class="m">1</span> <span class="p">{</span>
+				<span class="n">size</span> <span class="o">=</span> <span class="m">1</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+				<span class="n">size</span> <span class="o">=</span> <span class="kt">int</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="n">buf</span> <span class="o">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="n">nr</span><span class="p">,</span> <span class="n">er</span> <span class="o">:=</span> <span class="n">src</span><span class="o">.</span><span class="n">Read</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">nr</span> <span class="o">&gt;</span> <span class="m">0</span> <span class="p">{</span>
+			<span class="n">nw</span><span class="p">,</span> <span class="n">ew</span> <span class="o">:=</span> <span class="n">dst</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">buf</span><span class="p">[</span><span class="m">0</span><span class="o">:</span><span class="n">nr</span><span class="p">])</span>
+			<span class="k">if</span> <span class="n">nw</span> <span class="o">&lt;</span> <span class="m">0</span> <span class="o">||</span> <span class="n">nr</span> <span class="o">&lt;</span> <span class="n">nw</span> <span class="p">{</span>
+				<span class="n">nw</span> <span class="o">=</span> <span class="m">0</span>
+				<span class="k">if</span> <span class="n">ew</span> <span class="o">==</span> <span class="no">nil</span> <span class="p">{</span>
+					<span class="n">ew</span> <span class="o">=</span> <span class="n">errInvalidWrite</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+			<span class="n">written</span> <span class="o">+=</span> <span class="kt">int64</span><span class="p">(</span><span class="n">nw</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">ew</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+				<span class="n">err</span> <span class="o">=</span> <span class="n">ew</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+			<span class="k">if</span> <span class="n">nr</span> <span class="o">!=</span> <span class="n">nw</span> <span class="p">{</span>
+				<span class="n">err</span> <span class="o">=</span> <span class="n">ErrShortWrite</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="n">er</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="n">er</span> <span class="o">!=</span> <span class="n">EOF</span> <span class="p">{</span>
+				<span class="n">err</span> <span class="o">=</span> <span class="n">er</span>
+			<span class="p">}</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">written</span><span class="p">,</span> <span class="n">err</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>可以看到，实现原理跟我们上面实现的<code class="language-plaintext highlighter-rouge">CopyData</code>基本原理一样，不过它有个优化点：</p><ul><li>如果 Reader 对象同时也实现了 <code class="language-plaintext highlighter-rouge">WriterTo</code> 接口，那么直接调用它的 <code class="language-plaintext highlighter-rouge">WriteTo</code> 方法；<li>亦或者，如果 Writer 对象同时也实现了 <code class="language-plaintext highlighter-rouge">ReaderFrom</code> 接口，那么直接调用它的 <code class="language-plaintext highlighter-rouge">ReadFrom</code> 方法</ul><p>从而无需把数据先拷贝到临时buffer。</p><h2 id="3-bytesbuffer"><span class="mr-2">3 <code class="language-plaintext highlighter-rouge">bytes.Buffer</code></span><a href="#3-bytesbuffer" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>聊到现在，我们发现了golang中处理数据的核心，就是 Reader 和 Writer 两个接口了。</p><p>那么，如果我们现在有一段二进制数据（存放在 <code class="language-plaintext highlighter-rouge">[]byte</code> 或者 <code class="language-plaintext highlighter-rouge">string</code> 中）需要处理，那么我们怎么把它转换成一个 Reader 对象呢？</p><p>答案就是golang官方库提供的 <code class="language-plaintext highlighter-rouge">bytes.Buffer</code> 类型！</p><p>它同时实现了 Reader 接口和 Writer 接口，并可以用 <code class="language-plaintext highlighter-rouge">[]byte</code> 或者 <code class="language-plaintext highlighter-rouge">string</code> 初始化。</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre><span class="n">bindata</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="m">1024</span><span class="p">)</span>
+<span class="n">buf</span> <span class="o">:=</span> <span class="n">bytes</span><span class="o">.</span><span class="n">NewBuffer</span><span class="p">(</span><span class="n">bindata</span><span class="p">)</span>
+</pre></table></code></div></div><p>上例中，我们从 bindata 创建了一个 bytes.Buffer 对象。接着，我们就可以将它当成一个 Reader 来处理 bindata。</p><p>当作为 Reader 时，bytes.Buffer 内部维护了一个偏移量，以指示当前读取到了哪个位置，这样下次的<code class="language-plaintext highlighter-rouge">Read()</code>方法可以接着上次位置继续读取。</p><p>其实，<code class="language-plaintext highlighter-rouge">bytes.Buffer</code>类型的定义也是非常简单的：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre><span class="k">type</span> <span class="n">Buffer</span> <span class="k">struct</span> <span class="p">{</span>
+	<span class="n">buf</span>      <span class="p">[]</span><span class="kt">byte</span> <span class="c">// contents are the bytes buf[off : len(buf)]</span>
+	<span class="n">off</span>      <span class="kt">int</span>    <span class="c">// read at &amp;buf[off], write at &amp;buf[len(buf)]</span>
+	<span class="n">lastRead</span> <span class="n">readOp</span> <span class="c">// last read operation, so that Unread* can work correctly.</span>
+<span class="p">}</span>
+</pre></table></code></div></div><blockquote><p><code class="language-plaintext highlighter-rouge">lastRead</code>只是为了在调用<code class="language-plaintext highlighter-rouge">Unread*</code>系列函数来撤销上次的读取操作时，保存上次的读操作类型。所谓“撤销读”操作，其实就是将偏移量回退到上次读操作之前的位置。那么，当然要知道上次是读取了什么类型的数据了（即上次读取了几个字节）。</p></blockquote><p>当作为 Writer 时，<code class="language-plaintext highlighter-rouge">bytes.Buffer</code>内部会自动分配足够的内存以保存写入的数据，而无需使用者关心。</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre><td class="rouge-code"><pre><span class="c">// 当作为Writer使用时，创建一个零值的buffer即可</span>
+<span class="n">buf</span> <span class="o">:=</span> <span class="n">bytes</span><span class="o">.</span><span class="n">Buffer</span><span class="p">{}</span>
+
+<span class="n">data</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="m">1024</span><span class="p">)</span>
+
+<span class="c">// 当写入数据时，buffer内部自动扩容</span>
+<span class="n">buf</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></table></code></div></div><p>要想了解 Buffer 的内部扩容机制，最好先了解下 <a href="https://shxwangcn.github.io/posts/golang-slice/">slice 内部的内存分配机制</a>，然后再结合 Buffer 的<code class="language-plaintext highlighter-rouge">Write()</code>方法的实现代码一起理解即可。</p><h2 id="4-聊聊链式处理的劣势"><span class="mr-2">4 聊聊链式处理的劣势</span><a href="#4-聊聊链式处理的劣势" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>不知道大家有没有注意到，Reader + Writer 的方式，只能形成简单的单链处理逻辑。因为一个 Reader，你一旦把它的数据读取了，那么就没法再读取第二遍。</p><p>要想在某个节点处分叉，那么必须先把数据拷贝出来(<code class="language-plaintext highlighter-rouge">[]byte</code>) ，然后再基于该 slice,重新初始化多个新的 Reader 去处理它。</p><p>所以这里又有了个新需求：将数据从 Reader 一次性全部拷贝到单个 slice（以下称其为 resultSlice）。这就是官方库里的 <code class="language-plaintext highlighter-rouge">io.ReadAll()</code>。</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre><span class="c">// 从 Reader 一直读数据，直到出错或者返回EOF，并返回成功读取到的数据</span>
+<span class="n">bytes</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="n">ReadAll</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>
+</pre></table></code></div></div><p>因为无法事先知道 Reader 的数据长度，所以 <code class="language-plaintext highlighter-rouge">ReadAll</code>的内部实现，一种可能的方案，就是在一个循环内，不停地按固定size读取出数据（unitSlice），再将 unitSlice 数据 append 到 resultSlice，直到EOF为止。</p><p>这里贴下它的实现：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">ReadAll</span><span class="p">(</span><span class="n">r</span> <span class="n">Reader</span><span class="p">)</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">b</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">512</span><span class="p">)</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">==</span> <span class="nb">cap</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+			<span class="c">// Add more capacity (let append pick how much).</span>
+			<span class="n">b</span> <span class="o">=</span> <span class="nb">append</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="m">0</span><span class="p">)[</span><span class="o">:</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)]</span>
+		<span class="p">}</span>
+		<span class="n">n</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">r</span><span class="o">.</span><span class="n">Read</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">:</span><span class="nb">cap</span><span class="p">(</span><span class="n">b</span><span class="p">)])</span>
+		<span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="o">:</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">+</span><span class="n">n</span><span class="p">]</span>
+		<span class="k">if</span> <span class="n">err</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="n">err</span> <span class="o">==</span> <span class="n">EOF</span> <span class="p">{</span>
+				<span class="n">err</span> <span class="o">=</span> <span class="no">nil</span>
+			<span class="p">}</span>
+			<span class="k">return</span> <span class="n">b</span><span class="p">,</span> <span class="n">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>这里的实现比较不直白。它并不是以固定的size去循环读，而是先分配个初始的 512Bytes的 slice，然后有额外的数据时，先依赖 slice本身的内存扩容机制（每扩容一次，需要将数据全部从旧位置复制到新位置）将其扩容，再将数据直接写到扩容后的空间。</p><h2 id="数据的序列化反序列化"><span class="mr-2">数据的序列化&amp;反序列化</span><a href="#数据的序列化反序列化" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>上面我们说了很多，但是都只是涉及到数据的复制，没有涉及到对数据的处理。实际开发中，我们经常会碰到数据的序列化和反序列化问题。</p><ul><li>所谓“序列化”，就是将一个具有某种结构（类型）的对象，按照某种规则，转换成一段二进制数据（一般是<code class="language-plaintext highlighter-rouge">[]byte</code>）；<li>所谓“反序列化”， 就是从一段二进制数据，按照某种规则，将其转换回特定结构（类型）的对象。</ul><h3 id="反序列化"><span class="mr-2">反序列化</span><a href="#反序列化" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><p>对于反序列化，可以将数据的来源抽象成 <code class="language-plaintext highlighter-rouge">io.Reader</code>，然后一边读，一边进行数据转换。</p><p>打个比方，我们在做服务开发时，肯定会涉及到 API 的调用（HTTP RESTFul API，或者 grpc/brpc等RPC框架）。这里以 HTTP 请求返回 JSON 格式的数据为例：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+</pre><td class="rouge-code"><pre><span class="k">type</span> <span class="n">User</span> <span class="k">struct</span> <span class="p">{</span>
+	<span class="n">Id</span>      <span class="kt">string</span> <span class="s">`json:"id"`</span>
+	<span class="n">Name</span>    <span class="kt">string</span> <span class="s">`json:"name"`</span>
+	<span class="n">Address</span> <span class="kt">string</span> <span class="s">`json:"address"`</span>
+	<span class="n">Tel</span>     <span class="kt">string</span> <span class="s">`json:"tel"`</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="n">GetUserInfo</span><span class="p">(</span><span class="n">id</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="n">User</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">resp</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">http</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="s">"https://example.com/users/"</span> <span class="o">+</span> <span class="n">id</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">err</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="no">nil</span><span class="p">,</span> <span class="n">err</span>
+	<span class="p">}</span>
+	<span class="k">defer</span> <span class="n">resp</span><span class="o">.</span><span class="n">Body</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span>
+
+	<span class="n">user</span> <span class="o">:=</span> <span class="n">User</span><span class="p">{}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>这里，我们需要实现一个 <code class="language-plaintext highlighter-rouge">GetUserInfo</code> 函数，从服务端查询回JSON格式的数据，然后将其转换成一个<code class="language-plaintext highlighter-rouge">User</code>类型的对象。</p><p>请求返回的 Body 数据存储在一个 <code class="language-plaintext highlighter-rouge">resp.Body</code> 对象中，它的接口类型是<code class="language-plaintext highlighter-rouge">io.ReadCloser</code>（ io.Reader + io.Closer）。</p><p>一种比较直观的方法就是，我们先把它的数据全部读取出来（<code class="language-plaintext highlighter-rouge">io.ReadAll</code>），然后调用 <code class="language-plaintext highlighter-rouge">json.Unmarshal</code> 完成 json 反序列化。</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre><td class="rouge-code"><pre>	data, err := io.ReadAll(resp.Body)
+	err = json.Unmarshal(data, &amp;user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &amp;user, nil
+}
+</pre></table></code></div></div><p>当然，熟悉使用json库的同学，肯定知道还有另外一种方法完成反序列化：</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre><span class="n">decoder</span> <span class="o">:=</span> <span class="n">json</span><span class="o">.</span><span class="n">NewDecoder</span><span class="p">(</span><span class="n">resp</span><span class="o">.</span><span class="n">Body</span><span class="p">)</span>
+<span class="n">decoder</span><span class="o">.</span><span class="n">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="n">user</span><span class="p">)</span>
+</pre></table></code></div></div><p>这里引入了一种新的类型：<code class="language-plaintext highlighter-rouge">json.Decoder</code>。创建它时，需要传入一个 Reader 对象；然后在调用<code class="language-plaintext highlighter-rouge">Decode()</code>时，直接从 Reader 对象一边读，一边反序列化（就跟从 <code class="language-plaintext highlighter-rouge">[]byte</code> 边读边序列化一样）。</p><p>相比于上面的方法，这种方法减少了一次数据复制的开销，性能更强。</p><h3 id="序列化"><span class="mr-2">序列化</span><a href="#序列化" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><p>对于序列化，将数据的去处，抽象化为 <code class="language-plaintext highlighter-rouge">io.Writer</code> 对象，然后一边转换，一边将数据写到 Writer 即可。</p><p>还是以上面的场景为例，这次我们需要实现一个 <code class="language-plaintext highlighter-rouge">UpdateUserInfo()</code> 函数，去服务端更新用户信息。</p><div class="language-go highlighter-rouge"><div class="code-header"> <span data-label-text="Go"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre><td class="rouge-code"><pre><span class="k">func</span> <span class="n">UpdateUserInfo</span><span class="p">(</span><span class="n">user</span> <span class="o">*</span><span class="n">User</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="n">buf</span> <span class="o">:=</span> <span class="n">bytes</span><span class="o">.</span><span class="n">Buffer</span><span class="p">{}</span>
+
+	<span class="n">encoder</span> <span class="o">:=</span> <span class="n">json</span><span class="o">.</span><span class="n">NewEncoder</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">)</span>
+	<span class="n">err</span> <span class="o">:=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">Encode</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">err</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">err</span>
+	<span class="p">}</span>
+
+	<span class="n">resp</span><span class="p">,</span> <span class="n">err</span> <span class="o">:=</span> <span class="n">http</span><span class="o">.</span><span class="n">Post</span><span class="p">(</span><span class="s">"https://example.com/users"</span><span class="p">,</span> <span class="s">"application/json"</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">err</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">err</span>
+	<span class="p">}</span>
+	<span class="k">defer</span> <span class="n">resp</span><span class="o">.</span><span class="n">Body</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span>
+
+	<span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">StatusCode</span> <span class="o">!=</span> <span class="n">http</span><span class="o">.</span><span class="n">StatusOK</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Errorf</span><span class="p">(</span><span class="s">"PostFailed: %d(%s)"</span><span class="p">,</span> <span class="n">resp</span><span class="o">.</span><span class="n">StatusCode</span><span class="p">,</span> <span class="n">resp</span><span class="o">.</span><span class="n">Status</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="no">nil</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>思考下这里数据的走向，涉及到两个环节：序列化（结构体对象 -&gt; 二进制数据）和 HTTP发包（二进制数据 -&gt; 网络协议栈）。</p><p>所以，这里我们使用 <code class="language-plaintext highlighter-rouge">bytes.Buffer</code> 来存储二进制数据。在序列化环节，它是一个 Writer；在发包环节，它是一个 Reader。</p><h2 id="总结"><span class="mr-2">总结</span><a href="#总结" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>本篇文章，从最基础的 Reader 接口 和 Writer 接口入手，一步步地为大家介绍了 <code class="language-plaintext highlighter-rouge">io.Copy</code>，<code class="language-plaintext highlighter-rouge">bytes.Buffer</code> 和 <code class="language-plaintext highlighter-rouge">io.ReadAll</code> 的使用和内部实现。</p><p>尤其需要注意的是，对于数据处理，优先考虑是否将其抽象化为 <code class="language-plaintext highlighter-rouge">Reader</code> 和 <code class="language-plaintext highlighter-rouge">Writer</code>。只有在特别必要的场景下，才需要使用<code class="language-plaintext highlighter-rouge">io.ReadAll</code>将原始数据拷贝出来。</p></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/golang/'>golang</a>, <a href='/categories/io/'>io</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/golang/" class="post-tag no-text-decoration" >golang</a> <a href="/tags/buffer/" class="post-tag no-text-decoration" >buffer</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> 本文由作者按照 <a href="https://creativecommons.org/licenses/by/4.0/"> CC BY 4.0 </a> 进行授权</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">分享</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=%E8%81%8A%E8%81%8Agolang%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%20-%20halfstep&url=%2Fposts%2Fgolang-buffer%2F" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=%E8%81%8A%E8%81%8Agolang%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%20-%20halfstep&u=%2Fposts%2Fgolang-buffer%2F" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://t.me/share/url?url=%2Fposts%2Fgolang-buffer%2F&text=%E8%81%8A%E8%81%8Agolang%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%20-%20halfstep" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i id="copy-link" class="fa-fw fas fa-link small" data-toggle="tooltip" data-placement="top" title="分享链接" data-title-succeed="链接已复制！"> </i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted"><div class="access"><div id="access-lastmod" class="post"><div class="panel-heading">最近更新</div><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/posts/golang-buffer/">聊聊golang中的数据处理</a><li><a href="/posts/golang-slice/">聊聊golang中的slice</a></ul></div><div id="access-tags"><div class="panel-heading">热门标签</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/golang/">golang</a> <a class="post-tag" href="/tags/buffer/">buffer</a> <a class="post-tag" href="/tags/kafka/">kafka</a> <a class="post-tag" href="/tags/linux-find-grep-sed-awk-netstat/">linux,find,grep,sed,awk,netstat,</a> <a class="post-tag" href="/tags/slice/">slice</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"><div class="panel-heading pl-3 pt-2 mb-2">文章内容</div><nav id="toc"></nav></div><script src="https://cdn.jsdelivr.net/npm/tocbot@4.20.1/dist/tocbot.min.js"></script></div></div><div class="row"><div id="tail-wrapper" class="col-12 col-lg-11 col-xl-9 pl-3 pr-3 pr-xl-4 mt-5"><div id="related-posts" class="mb-2 mb-sm-4"><h3 class="pt-2 mb-4 ml-1" data-toc-skip>相关文章</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/golang-slice/"><div class="card-body"> <em class="small" data-ts="1649776893" data-df="YYYY/MM/DD" > 2022/04/12 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>聊聊golang中的slice</h3><div class="text-muted small"><p> 本篇文章聊聊 golang 中的核心数据结构 —— slice 的内部实现，从而保证我们能够正确且高效地使用它。 源码文件： slice实现：runtime/slice.go append函数: cmd/compile/internal/walk/builtin.go</p></div></div></a></div><div class="card"> <a href="/posts/linux-commands/"><div class="card-body"> <em class="small" data-ts="1650504012" data-df="YYYY/MM/DD" > 2022/04/21 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>总结Linux中常见的命令行工具</h3><div class="text-muted small"><p> 本篇文章总结下日常开发中比较常用的命令行工具。 持续更新中… 包括以下工具： 文本文件类： 文件查找 find 文件搜索 grep 文件替换 sed 文件分析 awk 网络分析类： netstat nc nslookup &amp;amp; dig ...</p></div></div></a></div><div class="card"> <a href="/posts/kafka-protocol/"><div class="card-body"> <em class="small" data-ts="1612429200" data-df="YYYY/MM/DD" > 2021/02/04 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>Kafka原理学习之协议交互流程</h3><div class="text-muted small"><p> 要想理解某个系统是怎么运行的，首先我们可以看看它提供什么样的API。本文从 Kafka 的协议交互流程入手，分析 Producer 和 Consumer 是如何工作的。一方面，可以用来实现自己的 kafkasdk；另一方面也能更好地理解 Kafka 的内部原理。 接下来就从以下3个方面来学习Kafka协议： Kafka协议格式，包括编解码方案； Producer 工作流程； ...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/posts/kafka-protocol/" class="btn btn-outline-primary" prompt="上一篇"><p>Kafka原理学习之协议交互流程</p></a> <a href="/posts/golang-slice/" class="btn btn-outline-primary" prompt="下一篇"><p>聊聊golang中的slice</p></a></div><script type="text/javascript"> $(function () { const origin = "https://giscus.app"; const iframe = "iframe.giscus-frame"; const lightTheme = "light"; const darkTheme = "dark_dimmed"; let initTheme = lightTheme; if ($("html[data-mode=dark]").length > 0 || ($("html[data-mode]").length == 0 && window.matchMedia("(prefers-color-scheme: dark)").matches)) { initTheme = darkTheme; } let giscusAttributes = { "src": "https://giscus.app/client.js", "data-repo": "shxwangcn/shxwangcn.github.io", "data-repo-id": "R_kgDOHKW19g", "data-category": "Announcements", "data-category-id": "DIC_kwDOHKW19s4COo5C", "data-mapping": "pathname", "data-reactions-enabled": "1", "data-emit-metadata": "0", "data-theme": initTheme, "data-input-position": "top", "data-lang": "", "crossorigin": "anonymous", "async": "" }; let giscusScript = document.createElement("script"); Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value)); document.getElementById("tail-wrapper").appendChild(giscusScript); addEventListener("message", (event) => { if (event.source === window && event.data && event.data.direction === ModeToggle.ID) { /* global theme mode changed */ const mode = event.data.message; const theme = (mode === ModeToggle.DARK_MODE ? darkTheme : lightTheme); const message = { setConfig: { theme: theme } }; const giscus = document.querySelector(iframe).contentWindow; giscus.postMessage({ giscus: message }, origin); } }); }); </script></div></div></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-sm-11 post-content"><div id="search-hints"><div id="access-tags"><div class="panel-heading">热门标签</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/golang/">golang</a> <a class="post-tag" href="/tags/buffer/">buffer</a> <a class="post-tag" href="/tags/kafka/">kafka</a> <a class="post-tag" href="/tags/linux-find-grep-sed-awk-netstat/">linux,find,grep,sed,awk,netstat,</a> <a class="post-tag" href="/tags/slice/">slice</a></div></div></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><footer><div class="container pl-lg-4 pr-lg-4"><div class="d-flex justify-content-between align-items-center text-muted ml-md-3 mr-md-3"><div class="footer-left"><p class="mb-0"> © 2023 <a href="https://github.com/shxwangcn">王书孝(Wang Shuxiao)</a>. <span data-toggle="tooltip" data-placement="top" title="除非另有说明，本网站上的博客文章均由作者按照知识共享署名 4.0 国际 (CC BY 4.0) 许可协议进行授权。">保留部分权利。</span></p></div><div class="footer-right"><p class="mb-0">本站由 <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> 生成，采用 <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> 主题。</p></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js"></script> <script> (function () { function updateMermaid(event) { if (event.source === window && event.data && event.data.direction === ModeToggle.ID) { const mode = event.data.message; if (typeof mermaid === "undefined") { return; } let expectedTheme = (mode === ModeToggle.DARK_MODE ? "dark" : "default"); let config = {theme: expectedTheme}; /* Re-render the SVG › <https://github.com/mermaid-js/mermaid/issues/311#issuecomment-332557344> */ $(".mermaid").each(function () { let svgCode = $(this).prev().children().html(); $(this).removeAttr("data-processed"); $(this).html(svgCode); }); mermaid.initialize(config); mermaid.init(undefined, ".mermaid"); } } let initTheme = "default"; if ($("html[data-mode=dark]").length > 0 || ($("html[data-mode]").length == 0 && window.matchMedia("(prefers-color-scheme: dark)").matches)) { initTheme = "dark"; } let mermaidConf = { theme: initTheme /* <default|dark|forest|neutral> */ }; /* Create mermaid tag */ $("pre").has("code.language-mermaid").each(function () { let svgCode = $(this).children().html(); $(this).addClass("unloaded"); $(this).after(`<pre class=\"mermaid\">${svgCode}</pre>`); }); mermaid.initialize(mermaidConf); window.addEventListener("message", updateMermaid); })(); </script><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.10.0/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"> {categories} {tags}</div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">搜索结果为空</p>', templateMiddleware: function(prop, value, template) { if (prop === 'categories') { if (value === '') { return `${value}`; } else { return `<div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`; } } if (prop === 'tags') { if (value === '') { return `${value}`; } else { return `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`; } } } }); </script> <script src="https://cdn.jsdelivr.net/combine/npm/magnific-popup@1/dist/jquery.magnific-popup.min.js,npm/lazysizes@5.3.2/lazysizes.min.js,npm/clipboard@2/dist/clipboard.min.js"></script> <script src="https://cdn.jsdelivr.net/combine/npm/dayjs@1/dayjs.min.js,npm/dayjs@1/locale/zh.min.js,npm/dayjs@1/plugin/relativeTime.min.js,npm/dayjs@1/plugin/localizedFormat.min.js"></script> <script defer src="/assets/js/dist/post.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.bundle.min.js"></script> <script defer src="/unregister.js"></script>
