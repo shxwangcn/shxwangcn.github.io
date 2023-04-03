@@ -13,17 +13,17 @@ baseurl: ''
 lang: zh-CN
 
 # Additional parameters for datetime localization, optional. › https://github.com/iamkun/dayjs/tree/dev/src/locale
-prefer_datetime_locale:
+prefer_datetime_locale: zh-cn
 
 # Change to your timezone › http://www.timezoneconverter.com/cgi-bin/findzone/findzone
-timezone:
+timezone: Asia/Shanghai
 
 # jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
 # ↓ --------------------------
 
-title: 王书孝                          # the main title
+title: halfstep                          # the main title
 
-tagline: 一名普普通通的程序猿   # it will display as the sub-title
+tagline: 不积跬步无以至千里
 
 description: >-                         # used by seo meta and the atom feed
   记录自己在日常工作中遇到的各种问题，也当作自己的学习笔记，偶尔也发发牢骚
